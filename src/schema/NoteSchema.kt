@@ -4,6 +4,7 @@ import com.apurebase.kgraphql.Context
 import com.apurebase.kgraphql.schema.dsl.SchemaBuilder
 import com.notes.models.Note
 import com.notes.models.NoteInput
+import com.notes.models.User
 import com.notes.services.NoteService
 
 fun SchemaBuilder.noteSchema(noteService: NoteService) {
@@ -28,9 +29,9 @@ fun SchemaBuilder.noteSchema(noteService: NoteService) {
 
     query("notes") {
         description = "Retrieve all notes"
-        resolver { ctx: Context ->
+        resolver { userId: String, ctx: Context ->
             try {
-                noteService.getNotes()
+                noteService.getNotesByUserId(userId)
             } catch (e: Exception) {
                 null
             }
@@ -50,9 +51,10 @@ fun SchemaBuilder.noteSchema(noteService: NoteService) {
 
     mutation("updateNote") {
         description = "Updates a note"
-        resolver { id: String, noteInput: NoteInput, ctx: Context ->
+        resolver { noteId: String, noteInput: NoteInput, ctx: Context ->
             try {
-                noteService.updateNote(id, noteInput)
+                val userId = ctx.get<User>()?.id ?: error("Not signed in")
+                noteService.updateNote(userId, noteId, noteInput)
             } catch (e: Exception) {
                 null
             }
@@ -61,9 +63,10 @@ fun SchemaBuilder.noteSchema(noteService: NoteService) {
 
     mutation("deleteNote") {
         description = "Deletes a note"
-        resolver { id: String, ctx: Context ->
+        resolver { noteId: String, ctx: Context ->
             try {
-                noteService.deleteNote(id)
+                val userId = ctx.get<User>()?.id ?: error("Not signed in")
+                noteService.deleteNote(userId, noteId)
             } catch (e: Exception) {
                 false
             }
